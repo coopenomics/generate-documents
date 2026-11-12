@@ -60,7 +60,29 @@ export interface ConnectionPackageData extends BaseCooperativeInfo {
 }
 
 // Интерфейс для нового кооператива (ustav.docx, protocol_1.docx)
+// Гарантийное письмо собственника помещения. Раздел формы необязательный:
+// пустое поле остаётся в письме жёлтой подсказкой для ручного заполнения.
+export interface GarantLetterData {
+  tax_authority?: string;
+  owner_full_name?: string;
+  owner_birthday?: string; // YYYY-MM-DD
+  owner_address?: string;
+  owner_inn?: string;
+  owner_passport?: string; // серия и номер
+  owner_passport_issued_by?: string;
+  owner_passport_issue_date?: string; // YYYY-MM-DD
+  owner_passport_code?: string;
+  premises_part?: string;
+  premises_area?: string;
+  egrn_record?: string;
+  egrn_date?: string; // YYYY-MM-DD
+  letter_date?: string; // YYYY-MM-DD
+}
+
 export interface NewCooperativeData extends BaseCooperativeInfo {
+  // Гарантийное письмо собственника помещения (необязательно)
+  garant?: GarantLetterData;
+
   // Дата учредительного собрания
   founding_date: string; // Исходная дата
   

@@ -5,7 +5,7 @@
 // кооператив не получает и не обрабатывает персональные данные.
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
-import type { ConnectionPackageData, NewCooperativeData } from '../../../../packages/shared/src'
+import type { ConnectionPackageData, GarantLetterData, NewCooperativeData } from '../../../../packages/shared/src'
 import { GARANT_HINTS, highlightDocx } from './hints.mjs'
 
 // Префикс пути сайта: на GitHub Pages сайт живёт в подкаталоге репозитория.
@@ -85,15 +85,38 @@ const MEMBER_FIELDS = [
   'passport_address', 'inn',
 ] as const
 
+// Гарантийное письмо: раздел формы необязательный. Заполненное поле
+// подставляется, пустое остаётся жёлтой подсказкой из GARANT_HINTS —
+// генератор заполняет письмо всегда, остальные документы от него не зависят.
+const GARANT_DATES = new Set(['owner_birthday', 'owner_passport_issue_date', 'egrn_date', 'letter_date'])
+
+function garantData(g: GarantLetterData = {}) {
+  const out: Record<string, string> = { ...GARANT_HINTS }
+  for (const [key, raw] of Object.entries(g)) {
+    const value = (raw || '').trim()
+    if (!value || !(key in GARANT_HINTS)) continue
+    if (GARANT_DATES.has(key)) {
+      const d = parseIsoDate(value)
+      out[key] = `${pad2(d.day)}.${pad2(d.month)}.${d.year}`
+    } else {
+      out[key] = value
+    }
+  }
+  // Подпись «И. О. Фамилия» из ФИО «Фамилия Имя Отчество»
+  const [last, first, middle] = (g.owner_full_name || '').trim().split(/\s+/)
+  if (last && first) {
+    out.owner_short_name = [first, middle].filter(Boolean).map((s) => `${s[0]}.`).join(' ') + ` ${last}`
+  }
+  return out
+}
+
 function processNewCooperativeData(data: NewCooperativeData) {
   const f = parseIsoDate(data.founding_date)
   const protocol1 = data.protocol_1_date ? parseIsoDate(data.protocol_1_date) : null
 
   const result: Record<string, any> = {
-    // Гарантийное письмо: данных собственника помещения в форме нет,
-    // эти места остаются жёлтыми подсказками для ручного заполнения
-    ...GARANT_HINTS,
     ...data,
+    ...garantData(data.garant),
     fp_day: f.day.toString(),
     fp_month: MONTHS_GENITIVE[f.month - 1],
     fp_year: f.year.toString(),

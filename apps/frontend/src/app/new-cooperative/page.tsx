@@ -4,8 +4,26 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ArrowLeftIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { NewCooperativeData, Member } from '../../../../../packages/shared/src'
+import { NewCooperativeData, Member, GarantLetterData } from '../../../../../packages/shared/src'
 import { generateNewCooperative, saveBlob, SHOW_TEST_BUTTON } from '../../lib/generator'
+
+// Поля гарантийного письма собственника помещения (раздел необязательный)
+const GARANT_FIELDS: { key: keyof GarantLetterData; label: string; placeholder?: string; date?: boolean; wide?: boolean }[] = [
+  { key: 'tax_authority', label: 'Регистрирующий орган (кому)', placeholder: 'Межрайонную ИФНС России № 46 по г. Москве', wide: true },
+  { key: 'owner_full_name', label: 'ФИО собственника', placeholder: 'Петров Пётр Петрович' },
+  { key: 'owner_birthday', label: 'Дата рождения', date: true },
+  { key: 'owner_address', label: 'Адрес регистрации собственника', placeholder: 'г. Москва, ул. Примерная, д. 1, кв. 1', wide: true },
+  { key: 'owner_inn', label: 'ИНН собственника', placeholder: '000000000000' },
+  { key: 'owner_passport', label: 'Паспорт: серия и номер', placeholder: '0000 000000' },
+  { key: 'owner_passport_issued_by', label: 'Кем выдан', placeholder: 'ГУ МВД России по г. Москве', wide: true },
+  { key: 'owner_passport_issue_date', label: 'Дата выдачи', date: true },
+  { key: 'owner_passport_code', label: 'Код подразделения', placeholder: '000-000' },
+  { key: 'premises_part', label: 'Что предоставляется', placeholder: 'комнату № 1' },
+  { key: 'premises_area', label: 'Площадь, кв. м', placeholder: '20' },
+  { key: 'egrn_record', label: 'Номер государственной регистрации права (из выписки ЕГРН)', placeholder: '77:00:0000000:0000-77/000/2020-1', wide: true },
+  { key: 'egrn_date', label: 'Дата регистрации права', date: true },
+  { key: 'letter_date', label: 'Дата письма', date: true },
+]
 
 export default function NewCooperativePage() {
   const [isGenerating, setIsGenerating] = useState(false)
@@ -652,6 +670,33 @@ export default function NewCooperativePage() {
             {Array.from({ length: 6 }).map((_, index) => 
               renderMemberForm(index)
             )}
+          </div>
+
+          {/* Гарантийное письмо собственника помещения — необязательно */}
+          <div className="card">
+            <div className="card-body">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">
+                Собственник помещения
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Необязательно. Данные для гарантийного письма собственника помещения. Пустые поля
+                останутся в письме жёлтыми подсказками, их можно заполнить в Word.
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {GARANT_FIELDS.map((f) => (
+                  <div key={f.key} className={f.wide ? 'md:col-span-2' : undefined}>
+                    <label className="form-label">{f.label}</label>
+                    <input
+                      type={f.date ? 'date' : 'text'}
+                      className="form-input"
+                      {...register(`garant.${f.key}` as const)}
+                      placeholder={f.placeholder}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Кнопка отправки / плашка с результатом */}
