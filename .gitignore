@@ -8,3 +8,5 @@ temp/
 out/
 apps/frontend/.next/
 apps/frontend/out/
+# Шаблоны для ручного заполнения собирает scripts/make-samples.mjs перед сборкой
+apps/frontend/public/samples/

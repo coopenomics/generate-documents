@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
-    "build": "next build",
+    "make-samples": "node scripts/make-samples.mjs",
+    "dev": "node scripts/make-samples.mjs && next dev -p 3001",
+    "build": "node scripts/make-samples.mjs && next build",
     "lint": "next lint"
   },
   "dependencies": {

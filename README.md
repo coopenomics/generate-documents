@@ -24,6 +24,8 @@ pnpm dev          # http://localhost:3001
 pnpm build        # статический сайт в apps/frontend/out
 ```
 
+Шаблоны Word для ручного заполнения (`public/samples`) собирает `scripts/make-samples.mjs` из тех же .docx при каждой сборке.
+
 Кнопку «заполнить пример» включает переменная сборки `NEXT_PUBLIC_SHOW_TEST_BUTTON=true`.
 
 ## Обновление шаблонов
