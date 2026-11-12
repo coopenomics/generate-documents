@@ -722,10 +722,22 @@ export default function NewCooperativePage() {
           <div className="card">
             <div className="card-body">
               <h3 className="text-lg font-medium text-gray-900 mb-1">Адрес кооператива</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Перепишите элементы адреса из Государственного адресного реестра:{' '}
-                <a href="https://fias.nalog.ru" target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">fias.nalog.ru</a>.
-                Адрес попадёт в форму Р11001, протокол и гарантийное письмо. Пустые строки пропустите.
+              <p className="text-sm text-gray-500 mb-3">
+                Адрес попадёт в форму Р11001, протокол и гарантийное письмо. Налоговая принимает адрес
+                только в том виде, как он записан в Государственном адресном реестре (ГАР).
+              </p>
+              <ol className="mb-3 list-decimal space-y-1 pl-5 text-sm text-gray-600">
+                <li>
+                  Откройте{' '}
+                  <a href="https://fias.nalog.ru" target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">fias.nalog.ru</a>{' '}
+                  — официальный сайт ГАР, поиск бесплатный и без регистрации.
+                </li>
+                <li>Найдите адрес без индекса или по кадастровому номеру помещения из выписки ЕГРН.</li>
+                <li>Откройте карточку объекта и смотрите адрес в муниципальном делении.</li>
+                <li>Перепишите элементы в поля ниже, сокращения типов («ул.», «д.», «помещение») — как в карточке.</li>
+              </ol>
+              <p className="mb-4 text-sm text-gray-500">
+                Если адрес не находится, попросите у собственника помещения акт о присвоении адреса. Пустые поля пропустите.
               </p>
               <div className="grid gap-4 md:grid-cols-4">
                 {ADDRESS_FIELDS.map((f) => (
