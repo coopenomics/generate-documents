@@ -6,6 +6,7 @@
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import type { ConnectionPackageData, NewCooperativeData } from '../../../../packages/shared/src'
+import { GARANT_HINTS, highlightDocx } from './hints.mjs'
 
 // Префикс пути сайта: на GitHub Pages сайт живёт в подкаталоге репозитория.
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''
@@ -13,7 +14,7 @@ export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''
 // Наборы шаблонов лежат в public/templates/<набор>/. Список задан явно:
 // у статического сайта нет каталога, который можно прочитать.
 const TEMPLATE_SETS = {
-  'new-cooperative': ['ustav.docx', 'protocol_1.docx'],
+  'new-cooperative': ['ustav.docx', 'protocol_1.docx', 'garant_letter.docx'],
   'connection-package': [
     '100_entrepreneur_application_form.docx',
     '100_individual_application_form.docx',
@@ -26,6 +27,12 @@ const TEMPLATE_SETS = {
 } as const
 
 type TemplateSet = keyof typeof TEMPLATE_SETS
+
+// Готовые файлы, которые кладутся в архив набора без заполнения:
+// пустой бланк заявления Р11001 для подачи в налоговую.
+const EXTRA_FILES: Partial<Record<TemplateSet, { path: string; name: string }[]>> = {
+  'new-cooperative': [{ path: 'forms/R11001.pdf', name: 'Форма Р11001 (бланк).pdf' }],
+}
 
 // Месяц в родительном падеже: «15 января», а не «15 январь».
 const MONTHS_GENITIVE = [
@@ -83,6 +90,9 @@ function processNewCooperativeData(data: NewCooperativeData) {
   const protocol1 = data.protocol_1_date ? parseIsoDate(data.protocol_1_date) : null
 
   const result: Record<string, any> = {
+    // Гарантийное письмо: данных собственника помещения в форме нет,
+    // эти места остаются жёлтыми подсказками для ручного заполнения
+    ...GARANT_HINTS,
     ...data,
     fp_day: f.day.toString(),
     fp_month: MONTHS_GENITIVE[f.month - 1],
@@ -132,9 +142,17 @@ async function renderSet(set: TemplateSet, data: Record<string, any>) {
       linebreaks: true,
     })
     doc.render(data)
+    // Подсказки, которые остались вместо данных, выделяются жёлтым
+    highlightDocx(doc.getZip())
     const outName = name.replace(/\.docx$/, '_rendered.docx')
-    archive.file(outName, doc.getZip().generate({ type: 'uint8array' }))
+    archive.file(outName, doc.getZip().generate({ type: 'uint8array', compression: 'DEFLATE' }))
     files.push(outName)
+  }
+  for (const extra of EXTRA_FILES[set] || []) {
+    const res = await fetch(`${BASE_PATH}/${extra.path}`)
+    if (!res.ok) throw new Error(`Файл ${extra.name} не загрузился (HTTP ${res.status})`)
+    archive.file(extra.name, new Uint8Array(await res.arrayBuffer()))
+    files.push(extra.name)
   }
   return { blob: archive.generate({ type: 'blob', mimeType: 'application/zip' }) as Blob, files }
 }

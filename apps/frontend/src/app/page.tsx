@@ -38,6 +38,8 @@ export default function HomePage() {
             <ul className="text-sm text-gray-500 space-y-2 text-left">
               <li>• Типовой Устав кооператива</li>
               <li>• Протокол №1 учредительного собрания</li>
+              <li>• Гарантийное письмо собственника помещения</li>
+              <li>• Бланк заявления по форме Р11001 для налоговой</li>
             </ul>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -56,7 +58,7 @@ export default function HomePage() {
                   Заполнить онлайн
                 </Link>
                 <p className="text-xs text-gray-500 mt-2">
-                  Заполните форму, и браузер подставит данные в устав и протокол.
+                  Заполните форму, и браузер подставит данные в документы.
                 </p>
               </div>
             </div>
