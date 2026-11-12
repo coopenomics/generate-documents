@@ -1,0 +1,22 @@
+{
+  "name": "cooperative-document-generator",
+  "version": "1.0.0",
+  "description": "Генератор документов кооператива: статический сайт, документы заполняются в браузере",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run --filter=@coop/frontend dev",
+    "build": "pnpm run --filter=@coop/frontend build"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "keywords": [
+    "docx",
+    "template",
+    "generator",
+    "cooperative",
+    "monorepo"
+  ],
+  "author": "",
+  "license": "ISC"
+}
