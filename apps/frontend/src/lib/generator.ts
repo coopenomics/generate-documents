@@ -7,6 +7,7 @@ import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import type { ConnectionPackageData, GarantLetterData, NewCooperativeData } from '../../../../packages/shared/src'
 import { GARANT_HINTS, highlightDocx } from './hints.mjs'
+import { addressText, buildR11001Pdf, CHAIRMAN_INDEX, fillR11001 } from './r11001'
 
 // Префикс пути сайта: на GitHub Pages сайт живёт в подкаталоге репозитория.
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''
@@ -28,10 +29,14 @@ const TEMPLATE_SETS = {
 
 type TemplateSet = keyof typeof TEMPLATE_SETS
 
-// Готовые файлы, которые кладутся в архив набора без заполнения:
-// пустой бланк заявления Р11001 для подачи в налоговую.
-const EXTRA_FILES: Partial<Record<TemplateSet, { path: string; name: string }[]>> = {
-  'new-cooperative': [{ path: 'forms/R11001.pdf', name: 'Форма Р11001 (бланк).pdf' }],
+// Готовые файлы, которые кладутся в архив набора без заполнения.
+// Форму Р11001 для нового кооператива добавляет generateNewCooperative.
+const EXTRA_FILES: Partial<Record<TemplateSet, { path: string; name: string }[]>> = {}
+
+async function fetchBytes(path: string): Promise<ArrayBuffer> {
+  const res = await fetch(`${BASE_PATH}/${path}`)
+  if (!res.ok) throw new Error(`Файл ${path} не загрузился (HTTP ${res.status})`)
+  return res.arrayBuffer()
 }
 
 // Месяц в родительном падеже: «15 января», а не «15 январь».
@@ -130,7 +135,10 @@ function processNewCooperativeData(data: NewCooperativeData) {
     confidential_email: data.confidential_email || '',
     confidential_link: data.confidential_link || '',
     protocol_1_date: protocol1 ? `${pad2(protocol1.day)}.${pad2(protocol1.month)}.${protocol1.year}` : '',
-    index_and_full_address: data.index_and_full_address || '',
+    // Строку адреса для протокола и письма генератор берёт из полей ГАР
+    index_and_full_address: addressText(data.address) || data.index_and_full_address || '',
+    // Председатель совета — учредитель 2, как в протоколе
+    chairman_full_name: ((data as any)[`member_${CHAIRMAN_INDEX}`]?.full_name || data.chairman_full_name || ''),
     protocol_1_open_time: data.protocol_1_open_time || '',
     protocol_1_close_time: data.protocol_1_close_time || '',
     initial_individuals_and_entprs_text: data.initial_individuals_and_entprs_text || 'Сто',
@@ -177,8 +185,10 @@ async function renderSet(set: TemplateSet, data: Record<string, any>) {
     archive.file(extra.name, new Uint8Array(await res.arrayBuffer()))
     files.push(extra.name)
   }
-  return { blob: archive.generate({ type: 'blob', mimeType: 'application/zip' }) as Blob, files }
+  return { archive, files }
 }
+
+const zipBlob = (archive: PizZip) => archive.generate({ type: 'blob', mimeType: 'application/zip' }) as Blob
 
 // Сохраняет архив на диск через временную ссылку.
 function saveBlob(blob: Blob, fileName: string) {
@@ -193,13 +203,31 @@ function saveBlob(blob: Blob, fileName: string) {
 }
 
 export async function generateNewCooperative(data: NewCooperativeData) {
-  const { blob, files } = await renderSet('new-cooperative', processNewCooperativeData(data))
+  const { archive, files } = await renderSet('new-cooperative', processNewCooperativeData(data))
+
+  // Форма Р11001: заполняется, только если данных хватает. Иначе — пустой
+  // бланк и список того, что не заполнено: в бланке ФНС посторонних знаков
+  // и подсказок быть не должно, частично заполненная форма — повод для отказа.
+  const r11001 = fillR11001(data)
+  if (r11001.missing.length === 0) {
+    const [template, font] = await Promise.all([fetchBytes('forms/R11001-fillable.pdf'), fetchBytes('fonts/LiberationMono-Regular.ttf')])
+    archive.file('Форма Р11001 (заполнена).pdf', await buildR11001Pdf(r11001, template, font))
+    files.push('Форма Р11001 (заполнена).pdf')
+  } else {
+    archive.file('Форма Р11001 (бланк).pdf', new Uint8Array(await fetchBytes('forms/R11001.pdf')))
+    const note = ['Форма Р11001 не заполнена: в форме на сайте не хватает данных.', '', ...r11001.missing.map((m) => `— ${m}`), ''].join('\r\n')
+    archive.file('Форма Р11001 — что не заполнено.txt', note)
+    files.push('Форма Р11001 (бланк).pdf', 'Форма Р11001 — что не заполнено.txt')
+  }
+
+  const blob = zipBlob(archive)
   saveBlob(blob, 'documents.zip')
-  return { blob, files }
+  return { blob, files, r11001Missing: r11001.missing }
 }
 
 export async function generateConnectionPackage(data: ConnectionPackageData) {
-  const { blob, files } = await renderSet('connection-package', processConnectionPackageData(data))
+  const { archive, files } = await renderSet('connection-package', processConnectionPackageData(data))
+  const blob = zipBlob(archive)
   saveBlob(blob, 'documents.zip')
   return { blob, files }
 }

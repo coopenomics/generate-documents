@@ -4,8 +4,37 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ArrowLeftIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { NewCooperativeData, Member, GarantLetterData } from '../../../../../packages/shared/src'
+import { NewCooperativeData, Member, GarantLetterData, GarAddress } from '../../../../../packages/shared/src'
 import { generateNewCooperative, saveBlob, SHOW_TEST_BUTTON } from '../../lib/generator'
+import { addressText, CHAIRMAN_INDEX, fillR11001 } from '../../lib/r11001'
+
+// Коды ОКВЭД по умолчанию: основной 94.99 и набор потребительского кооператива
+const DEFAULT_OKVED =
+  '94.99, 58.12.2, 58.19, 58.29, 62.01, 62.02, 62.03, 62.09, 63.11, 63.12, 63.99, 68.10, 68.20, 68.31, 68.32, 69.10, 69.20, 70.22, 72.20, 73.20, 74.90.9, 77.29, 77.39, 77.40, 81.10, 98.10, 98.20'
+
+// Элементы адреса по ГАР (п. 3 и 4 формы Р11001)
+const ADDRESS_FIELDS: { key: keyof GarAddress; label: string; placeholder?: string; span?: 2 | 4; options?: [string, string][] }[] = [
+  { key: 'postal_index', label: 'Индекс', placeholder: '123456' },
+  { key: 'region_code', label: 'Код субъекта РФ', placeholder: '77' },
+  { key: 'region_name', label: 'Субъект РФ (как в адресе)', placeholder: 'г. Москва', span: 2 },
+  { key: 'mo_type', label: 'Вид муниципального образования', span: 2, options: [['1', 'муниципальный район'], ['2', 'городской округ'], ['3', 'внутригородская территория города федерального значения'], ['4', 'муниципальный округ']] },
+  { key: 'mo_name', label: 'Муниципальное образование', placeholder: 'муниципальный округ Тестовый', span: 2 },
+  { key: 'settlement_type', label: 'Вид поселения', span: 2, options: [['1', 'городское поселение'], ['2', 'сельское поселение'], ['3', 'межселенная территория'], ['4', 'внутригородской район городского округа']] },
+  { key: 'settlement_name', label: 'Поселение', span: 2 },
+  { key: 'locality_type', label: 'Населённый пункт: вид', placeholder: 'г.' },
+  { key: 'locality_name', label: 'Населённый пункт', span: 2 },
+  { key: 'plan_type', label: 'Планировочная структура: тип', placeholder: 'мкр.' },
+  { key: 'plan_name', label: 'Элемент планировочной структуры', span: 2 },
+  { key: 'street_type', label: 'Улица: тип', placeholder: 'ул.' },
+  { key: 'street_name', label: 'Улица', placeholder: 'Тестовая', span: 2 },
+  { key: 'building_type', label: 'Здание: тип', placeholder: 'д.' },
+  { key: 'building_number', label: 'Номер здания', placeholder: '1' },
+  { key: 'building2_type', label: 'Корпус, строение: тип', placeholder: 'корп.' },
+  { key: 'building2_number', label: 'Номер', placeholder: '2' },
+  { key: 'room_type', label: 'Помещение: тип', placeholder: 'помещение' },
+  { key: 'room_number', label: 'Номер помещения', placeholder: '1' },
+  { key: 'extra', label: 'Уточнение для протокола и письма', placeholder: 'комната № 1', span: 2 },
+]
 
 // Поля гарантийного письма собственника помещения (раздел необязательный)
 const GARANT_FIELDS: { key: keyof GarantLetterData; label: string; placeholder?: string; date?: boolean; wide?: boolean }[] = [
@@ -51,6 +80,9 @@ export default function NewCooperativePage() {
       short_abbr_eng: 'CBS',
       eng_name: '',
       chairman_full_name: '',
+      okved: DEFAULT_OKVED,
+      paper_copy: false,
+      address: {},
       contact_email: '',
       confidential_email: '',
       confidential_link: '',
@@ -136,6 +168,9 @@ export default function NewCooperativePage() {
     }
   })
 
+  // Хватает ли данных для формы Р11001 — пересчёт при каждом изменении формы
+  const r11001Missing = fillR11001(watch() as NewCooperativeData).missing
+
   const onSubmit = async (data: NewCooperativeData) => {
     setIsGenerating(true)
     setError(null)
@@ -168,7 +203,6 @@ export default function NewCooperativePage() {
     setValue('name', 'ТЕСТ')
     setValue('city', 'Москва')
     setValue('website', 'https://test.coop')
-    setValue('chairman_full_name', 'Иванов Иван Иванович')
     setValue('contact_email', 'info@test.coop')
     setValue('confidential_email', 'privacy@test.coop')
     setValue('confidential_link', 'https://test.coop/privacy')
@@ -186,7 +220,15 @@ export default function NewCooperativePage() {
     
     // Данные протокола
     setValue('protocol_1_date', '2024-01-15')
-    setValue('index_and_full_address', '123456, г. Москва, ул. Тестовая, д. 1, оф. 101')
+    setValue('address', {
+      postal_index: '123456', region_code: '77', region_name: 'г. Москва', mo_type: '3', mo_name: 'муниципальный округ Тестовый',
+      street_type: 'ул.', street_name: 'Тестовая', building_type: 'д.', building_number: '1', room_type: 'помещение', room_number: '1',
+    })
+    for (let n = 1; n <= 6; n++) {
+      setValue(`member_${n}.birthplace` as any, 'гор. Москва')
+      setValue(`member_${n}.phone` as any, '+79000000000')
+    }
+    setValue('member_2.gender' as any, '1')
     setValue('protocol_1_open_time', '10:00')
     setValue('protocol_1_close_time', '11:00')
     
@@ -316,6 +358,47 @@ export default function NewCooperativePage() {
                 className="form-input"
                 {...register(`${memberKey}.inn` as any)}
                 placeholder="123456789012"
+              />
+            </div>
+
+            {index + 1 === CHAIRMAN_INDEX && (
+              <div>
+                <label className="form-label">Пол (для листа Е)</label>
+                <select className="form-select" {...register(`${memberKey}.gender` as any)}>
+                  <option value="">—</option>
+                  <option value="1">мужской</option>
+                  <option value="2">женский</option>
+                </select>
+              </div>
+            )}
+
+            <div className={index + 1 === CHAIRMAN_INDEX ? undefined : 'md:col-span-2'}>
+              <label className="form-label">Место рождения (как в паспорте)</label>
+              <input
+                type="text"
+                className="form-input"
+                {...register(`${memberKey}.birthplace` as any)}
+                placeholder="гор. Москва"
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Телефон</label>
+              <input
+                type="tel"
+                className="form-input"
+                {...register(`${memberKey}.phone` as any)}
+                placeholder="+7 900 000-00-00"
+              />
+            </div>
+
+            <div>
+              <label className="form-label">E-mail для документов о регистрации</label>
+              <input
+                type="email"
+                className="form-input"
+                {...register(`${memberKey}.email` as any)}
+                placeholder="пусто — e-mail кооператива"
               />
             </div>
 
@@ -462,19 +545,6 @@ export default function NewCooperativePage() {
                   />
                   {errors.founding_date && (
                     <p className="form-error">{errors.founding_date.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="form-label">ФИО председателя *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    {...register('chairman_full_name', { required: 'ФИО председателя обязательно' })}
-                    placeholder="Иванов Иван Иванович"
-                  />
-                  {errors.chairman_full_name && (
-                    <p className="form-error">{errors.chairman_full_name.message}</p>
                   )}
                 </div>
 
@@ -628,16 +698,6 @@ export default function NewCooperativePage() {
                 </div>
 
                 <div>
-                  <label className="form-label">Адрес проведения</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    {...register('index_and_full_address')}
-                    placeholder="123456, г. Москва, ул. Примерная, д. 1"
-                  />
-                </div>
-
-                <div>
                   <label className="form-label">Время начала</label>
                   <input
                     type="time"
@@ -655,6 +715,52 @@ export default function NewCooperativePage() {
                   />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Адрес кооператива по ГАР — один на все документы */}
+          <div className="card">
+            <div className="card-body">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Адрес кооператива</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Перепишите элементы адреса из Государственного адресного реестра:{' '}
+                <a href="https://fias.nalog.ru" target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">fias.nalog.ru</a>.
+                Адрес попадёт в форму Р11001, протокол и гарантийное письмо. Пустые строки пропустите.
+              </p>
+              <div className="grid gap-4 md:grid-cols-4">
+                {ADDRESS_FIELDS.map((f) => (
+                  <div key={f.key} className={f.span === 2 ? 'md:col-span-2' : f.span === 4 ? 'md:col-span-4' : undefined}>
+                    <label className="form-label">{f.label}</label>
+                    {f.options ? (
+                      <select className="form-select" {...register(`address.${f.key}` as const)}>
+                        <option value="">—</option>
+                        {f.options.map(([v, l]) => <option key={v} value={v}>{v} — {l}</option>)}
+                      </select>
+                    ) : (
+                      <input type="text" className="form-input" {...register(`address.${f.key}` as const)} placeholder={f.placeholder} />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 mt-4">
+                Адрес в документах: <span className="text-gray-800">{addressText(watch('address')) || '—'}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Данные только для заявления Р11001 */}
+          <div className="card">
+            <div className="card-body">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Для заявления Р11001</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Коды ОКВЭД через запятую, первый — основной вид деятельности. По умолчанию стоит набор
+                кодов потребительского кооператива, его можно изменить.
+              </p>
+              <textarea className="form-textarea" rows={3} {...register('okved')} />
+              <label className="mt-4 flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" {...register('paper_copy')} />
+                Выдать председателю документы о регистрации ещё и на бумаге
+              </label>
             </div>
           </div>
 
@@ -699,6 +805,25 @@ export default function NewCooperativePage() {
             </div>
           </div>
 
+          {/* Хватает ли данных для заявления Р11001 */}
+          <div className={`card ${r11001Missing.length ? 'border-yellow-300 bg-yellow-50' : 'border-success-200 bg-success-50'}`}>
+            <div className="card-body">
+              {r11001Missing.length === 0 ? (
+                <p className="text-success-800">Данных хватает: форма Р11001 будет заполнена.</p>
+              ) : (
+                <details>
+                  <summary className="cursor-pointer text-yellow-900">
+                    Для заполнения формы Р11001 не хватает данных ({r11001Missing.length}). Остальные документы будут готовы,
+                    а в архив попадёт пустой бланк Р11001 и список недостающего.
+                  </summary>
+                  <ul className="mt-3 list-disc pl-5 text-sm text-yellow-900 space-y-1">
+                    {r11001Missing.map((m) => <li key={m}>{m}</li>)}
+                  </ul>
+                </details>
+              )}
+            </div>
+          </div>
+
           {/* Кнопка отправки / плашка с результатом */}
           <div>
             {generationResult ? (
@@ -712,6 +837,11 @@ export default function NewCooperativePage() {
                   </h3>
                   <p className="text-success-700 mb-4">
                     Сгенерировано {generationResult.files?.length || 0} документов
+                  </p>
+                  <p className="text-success-700 mb-4 text-sm">
+                    {generationResult.r11001Missing?.length
+                      ? 'Форма Р11001 — пустой бланк и список недостающих данных.'
+                      : 'Форма Р11001 заполнена.'}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button

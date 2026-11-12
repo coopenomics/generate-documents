@@ -11,6 +11,41 @@ export interface Member {
   passport_code: string;
   passport_address: string;
   inn: string;
+  // Для формы Р11001 (листы Е и И)
+  gender?: '1' | '2' | ''; // 1 — мужской, 2 — женский
+  birthplace?: string; // место рождения, как в паспорте
+  phone?: string;
+  email?: string; // адрес для документов о регистрации; пусто — e-mail кооператива
+}
+
+// Адрес кооператива по элементам Государственного адресного реестра (ГАР).
+// Генератор заполняет из этих полей п. 3 и 4 формы Р11001 и строку адреса
+// для протокола и гарантийного письма — адрес везде один.
+export interface GarAddress {
+  postal_index?: string;
+  region_code?: string; // код субъекта РФ, две цифры: 77 — Москва
+  region_name?: string; // для строки адреса: «г. Москва», «Московская обл.»
+  mo_type?: string; // 1 — муниципальный район, 2 — городской округ, 3 — внутригородская территория города федерального значения, 4 — муниципальный округ
+  mo_name?: string;
+  settlement_type?: string; // 1 — городское поселение, 2 — сельское поселение, 3 — межселенная территория, 4 — внутригородской район
+  settlement_name?: string;
+  locality_type?: string; // город, деревня, село…
+  locality_name?: string;
+  plan_type?: string; // элемент планировочной структуры
+  plan_name?: string;
+  street_type?: string; // элемент улично-дорожной сети: улица, проезд, проспект…
+  street_name?: string;
+  building_type?: string; // здание: д., корп., стр.
+  building_number?: string;
+  building2_type?: string;
+  building2_number?: string;
+  building3_type?: string;
+  building3_number?: string;
+  room_type?: string; // помещение в здании: помещение, офис, кв.
+  room_number?: string;
+  flat_room_type?: string; // помещение в квартире
+  flat_room_number?: string;
+  extra?: string; // уточнение только для протокола и письма: «комната № 6»
 }
 
 // Базовая информация о кооперативе
@@ -82,6 +117,11 @@ export interface GarantLetterData {
 export interface NewCooperativeData extends BaseCooperativeInfo {
   // Гарантийное письмо собственника помещения (необязательно)
   garant?: GarantLetterData;
+
+  // Адрес по ГАР, коды ОКВЭД и выдача документов на бумаге — для формы Р11001
+  address?: GarAddress;
+  okved?: string; // коды через запятую или с новой строки, первый — основной
+  paper_copy?: boolean; // выдать председателю документы о регистрации на бумаге
 
   // Дата учредительного собрания
   founding_date: string; // Исходная дата
