@@ -1,27 +1,21 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
+import { Golos_Text, Literata } from 'next/font/google'
 
-const inter = Inter({ subsets: ['latin', 'cyrillic'] })
+// Golos Text — основной текст (шрифт создан для русских государственных
+// сервисов), Literata — заголовки: книжная антиква под тему документов.
+const golos = Golos_Text({ subsets: ['latin', 'cyrillic'], variable: '--font-golos', display: 'swap', adjustFontFallback: false })
+const literata = Literata({ subsets: ['latin', 'cyrillic'], variable: '--font-literata', display: 'swap' })
 
 export const metadata = {
-  title: 'Генератор документов кооператива',
-  description: 'Система генерации документов для потребительских кооперативов',
+  title: 'Документы для регистрации кооператива',
+  description:
+    'Устав, протокол учредительного собрания, гарантийное письмо и бланк Р11001 для регистрации потребительского кооператива. Заполните онлайн или скачайте шаблоны Word.',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru">
-      <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">
-          <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-            {children}
-          </main>
-        </div>
-      </body>
+    <html lang="ru" className={`${golos.variable} ${literata.variable}`}>
+      <body className="font-sans bg-gray-50 min-h-screen antialiased">{children}</body>
     </html>
   )
-} 
+}

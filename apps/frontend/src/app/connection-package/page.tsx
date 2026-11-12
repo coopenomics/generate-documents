@@ -78,7 +78,7 @@ export default function ConnectionPackagePage() {
   }
 
   return (
-    <div className="px-4 sm:px-0">
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Навигация */}
       <div className="mb-6">
         <Link href="/" className="inline-flex items-center text-primary-600 hover:text-primary-700">

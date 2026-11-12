@@ -7,7 +7,19 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-golos)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-literata)', 'Georgia', 'serif'],
+      },
       colors: {
+        // Палитра главной страницы: бумага, чернила, зелень печати, жёлтый маркер полей
+        paper: '#F6F3EC',
+        sheet: '#FFFDF8',
+        ink: '#1C1B19',
+        graphite: '#5E5A52',
+        rule: '#E3DDD0',
+        seal: { DEFAULT: '#1F5B3F', dark: '#17452F' },
+        marker: '#FFE36E',
         primary: {
           50: '#eff6ff',
           500: '#3b82f6',
