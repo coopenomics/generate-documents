@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { GARANT_HINTS, highlightDocx, hint } from '../src/lib/hints.mjs'
+import { chairPowersData } from '../src/lib/chair-powers.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const TEMPLATES = path.join(root, 'public/templates/new-cooperative')
@@ -61,6 +62,9 @@ const data = {
   minimum_organizations: hint('сумма'),
   minimum_organizations_text: hint('сумма прописью'),
   ...GARANT_HINTS,
+  // Полномочия председателя — готовый вариант прошлой редакции: только б),
+  // подпункт ж) остаётся; выбора в шаблоне для скачивания нет
+  ...chairPowersData(['б']),
 }
 for (let n = 1; n <= 6; n++) {
   for (const [field, label] of Object.entries(MEMBER_HINTS)) {

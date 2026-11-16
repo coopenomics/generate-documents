@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { NewCooperativeData, Member, GarantLetterData, GarAddress } from '../../../../../packages/shared/src'
 import { generateNewCooperative, saveBlob, SHOW_TEST_BUTTON } from '../../lib/generator'
 import { addressText, CHAIRMAN_INDEX, fillR11001 } from '../../lib/r11001'
+import { CHAIR_OPTIONS, chairPowersData, DEFAULT_CHAIR_POWERS, keepsZh } from '../../lib/chair-powers.mjs'
 
 // Коды ОКВЭД по умолчанию: основной 94.99 и набор потребительского кооператива
 const DEFAULT_OKVED =
@@ -81,6 +82,7 @@ export default function NewCooperativePage() {
       eng_name: '',
       chairman_full_name: '',
       okved: DEFAULT_OKVED,
+      chair_powers: DEFAULT_CHAIR_POWERS,
       paper_copy: false,
       address: {},
       contact_email: '',
@@ -167,6 +169,9 @@ export default function NewCooperativePage() {
       }
     }
   })
+
+  // Выбранные подпункты для председателя (галочки а–и)
+  const chairPowers: string[] = (watch('chair_powers') as string[] | undefined) || []
 
   // Хватает ли данных для формы Р11001 — пересчёт при каждом изменении формы
   const r11001Missing = fillR11001(watch() as NewCooperativeData).missing
@@ -761,6 +766,38 @@ export default function NewCooperativePage() {
               </div>
               <p className="text-sm text-gray-500 mt-4">
                 Адрес в документах: <span className="text-gray-800">{addressText(watch('address')) || '—'}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Полномочия председателя без кворума — п. 13.2 и 13.4 устава */}
+          <div className="card">
+            <div className="card-body">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Полномочия председателя совета</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Вопросы пункта 13.4 устава, которые председатель решает единолично, когда у совета нет кворума.
+                Если выбраны а) или е), подпункт ж) о приостановлении полномочий председателя исключается из устава,
+                а буквы подпунктов после него сдвигаются.
+              </p>
+              <div className="grid gap-2 md:grid-cols-2">
+                {CHAIR_OPTIONS.map(([letter, label]: string[]) => (
+                  <label key={letter} className="flex items-start gap-2 text-sm text-gray-700">
+                    <input type="checkbox" value={letter} className="mt-1" {...register('chair_powers')} />
+                    <span><b>{letter})</b> {label}</span>
+                  </label>
+                ))}
+                <label className="flex items-start gap-2 text-sm text-gray-400">
+                  <input type="checkbox" className="mt-1" checked={keepsZh(chairPowers)} disabled readOnly />
+                  <span><b>ж)</b> приостановление полномочий председателя советом — {keepsZh(chairPowers) ? 'остаётся в уставе' : 'исключён, выбраны а) или е)'}</span>
+                </label>
+              </div>
+              <p className="text-sm text-gray-500 mt-4">
+                В уставе:{' '}
+                <span className="text-gray-800">
+                  {chairPowersData(chairPowers).chair_has
+                    ? `«…по вопросам, перечисленным в ${chairPowersData(chairPowers).chair_abzac} подпункта 13.4 настоящего Устава, при отсутствии кворума…»`
+                    : 'предложения о единоличных решениях председателя нет'}
+                </span>
               </p>
             </div>
           </div>

@@ -7,6 +7,7 @@ import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import type { ConnectionPackageData, GarantLetterData, NewCooperativeData } from '../../../../packages/shared/src'
 import { GARANT_HINTS, highlightDocx } from './hints.mjs'
+import { chairPowersData, DEFAULT_CHAIR_POWERS } from './chair-powers.mjs'
 import { addressText, buildR11001Pdf, CHAIRMAN_INDEX, fillR11001 } from './r11001'
 
 // Префикс пути сайта: на GitHub Pages сайт живёт в подкаталоге репозитория.
@@ -122,6 +123,8 @@ function processNewCooperativeData(data: NewCooperativeData) {
   const result: Record<string, any> = {
     ...data,
     ...garantData(data.garant),
+    // Полномочия председателя без кворума: текст п. 13.2, подпункт ж) и буквы 13.4
+    ...chairPowersData(data.chair_powers ?? DEFAULT_CHAIR_POWERS),
     fp_day: f.day.toString(),
     fp_month: MONTHS_GENITIVE[f.month - 1],
     fp_year: f.year.toString(),
