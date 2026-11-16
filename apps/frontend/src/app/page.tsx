@@ -7,10 +7,14 @@ import { BASE_PATH } from '../lib/generator'
 const SAMPLES_URL = `${BASE_PATH}/samples/shablony-novyy-kooperativ.zip`
 const SOURCE_URL = 'https://github.com/coopenomics/generate-documents'
 
-const DOCUMENTS = [
+const DOCUMENTS: { title: string; text: string; link?: { href: string; label: string } }[] = [
   {
     title: 'Устав',
     text: 'Цели кооператива, порядок вступления и выхода пайщиков, взносы и органы управления.',
+    link: {
+      href: 'https://blog.blago.coop/ustav-potrebitelskogo-kooperativa/',
+      label: 'Что обязательно в уставе и что в типовом уставе можно менять',
+    },
   },
   {
     title: 'Протокол № 1 учредительного собрания',
@@ -154,7 +158,16 @@ export default function HomePage() {
                 <DownloadIcon />
               </a>
             </div>
-            <p className="rise mt-8 flex items-center gap-2.5 text-sm text-graphite" style={{ animationDelay: '320ms' }}>
+            <p className="rise mt-6 text-[15px] leading-7 text-graphite" style={{ animationDelay: '280ms' }}>
+              <a
+                href="https://blog.blago.coop/kak-zaregistrirovat-potrebitelskiy-kooperativ/"
+                className="text-seal underline decoration-seal/30 underline-offset-4 transition-colors hover:decoration-seal"
+              >
+                Пошаговая инструкция по регистрации потребительского кооператива
+              </a>{' '}
+              — какие листы Р11001 заполнять, коды ОКВЭД, нотариус и сроки.
+            </p>
+            <p className="rise mt-6 flex items-center gap-2.5 text-sm text-graphite" style={{ animationDelay: '320ms' }}>
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-seal" />
               Браузер заполняет документы на вашем устройстве. Данные формы остаются у вас.
             </p>
@@ -225,6 +238,11 @@ export default function HomePage() {
                 <span className="font-serif text-sm text-graphite">{String(i + 1).padStart(2, '0')}</span>
                 <h3 className="mt-3 text-lg font-medium leading-snug">{d.title}</h3>
                 <p className="mt-3 text-[15px] leading-7 text-graphite">{d.text}</p>
+                {d.link && (
+                  <a href={d.link.href} className="mt-3 inline-block text-[15px] leading-7 text-seal underline decoration-seal/30 underline-offset-4 transition-colors hover:decoration-seal">
+                    {d.link.label}
+                  </a>
+                )}
               </div>
             ))}
           </div>

@@ -584,9 +584,14 @@ export default function NewCooperativePage() {
           {/* Финансовые параметры */}
           <div className="card">
             <div className="card-body">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">
                 Финансовые параметры
               </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                <a href="https://blog.blago.coop/paevoy-vznos/" className="text-primary-600 underline">
+                  Что такое паевой взнос и чем он отличается от вступительного
+                </a>
+              </p>
               
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
@@ -784,6 +789,12 @@ export default function NewCooperativePage() {
               </h3>
               {/* Убираем кнопку добавления */}
             </div>
+            <p className="text-sm text-gray-500">
+              Протокол избирает учредителя 2 председателем совета, учредителя 6 — ревизором, остальных — членами совета.{' '}
+              <a href="https://blog.blago.coop/organy-kooperativa/" className="text-primary-600 underline">
+                Органы кооператива: совет, председатель, ревизионная комиссия
+              </a>
+            </p>
 
             {Array.from({ length: 6 }).map((_, index) => 
               renderMemberForm(index)
