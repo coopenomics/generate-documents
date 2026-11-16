@@ -20,6 +20,7 @@
 // fillR11001 — чистая функция: данные формы → значения полей и список
 // незаполненного. Её проверяет сверка с принятым бланком ВОСХОДа.
 import type { GarAddress, Member, NewCooperativeData } from '../../../../packages/shared/src'
+import { orgFormData } from './org-form.mjs'
 
 export type FieldValues = Record<string, string>
 
@@ -281,8 +282,9 @@ export function fillR11001(data: NewCooperativeData): R11001Fill {
   const name = up(data.name)
 
   // п. 1 — наименование на русском языке
-  const full = `${up(data.full_abbr || 'Потребительский кооператив')} «${name}»`
-  const short = `${up(data.short_abbr || 'ПК')} «${name}»`
+  const form = orgFormData(data.org_form_tail)
+  const full = `${up(form.full_abbr)} «${name}»`
+  const short = `${up(form.short_abbr)} «${name}»`
   if (!name) t.missing.push('Титульная часть: название кооператива')
   else {
     t.lines(['Text1.0.0', 'Text1.0.1', 'Text1.0.2', 'Text1.0.3', 'Text1.0.4', 'Text1.0.5'].map((n) => [n, 40] as [string, number]), full, 'полное наименование')

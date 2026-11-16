@@ -8,6 +8,7 @@ import { NewCooperativeData, Member, GarantLetterData, GarAddress } from '../../
 import { generateNewCooperative, saveBlob, SHOW_TEST_BUTTON } from '../../lib/generator'
 import { addressText, CHAIRMAN_INDEX, fillR11001 } from '../../lib/r11001'
 import { CHAIR_OPTIONS, chairPowersData, DEFAULT_CHAIR_POWERS, keepsZh } from '../../lib/chair-powers.mjs'
+import { orgFormData } from '../../lib/org-form.mjs'
 
 // Коды ОКВЭД по умолчанию: основной 94.99 и набор потребительского кооператива
 const DEFAULT_OKVED =
@@ -72,11 +73,9 @@ export default function NewCooperativePage() {
       name: '',
       city: '',
       website: '',
-      short_abbr: 'ПК',
-      full_abbr: 'Потребительский Кооператив',
-      full_abbr_genitive: 'Потребительского Кооператива',
-      full_abbr_dative: 'Потребительском Кооперативе',
-      big_full_abbr: 'ПОТРЕБИТЕЛЬСКИЙ КООПЕРАТИВ',
+      // Форма организации: «Потребительское Общество» (+ продолжение)
+      ...orgFormData(),
+      org_form_tail: '',
       full_abbr_eng: 'Consumer Benefit Society',
       short_abbr_eng: 'CBS',
       eng_name: '',
@@ -516,6 +515,22 @@ export default function NewCooperativePage() {
                   {errors.name && (
                     <p className="form-error">{errors.name.message}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="form-label">Продолжение наименования (необязательно)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    {...register('org_form_tail')}
+                    placeholder="взаимного обеспечения"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    В документах:{' '}
+                    <span className="text-gray-800">
+                      {orgFormData(watch('org_form_tail')).full_abbr} «{watch('name') || 'Название'}», {orgFormData(watch('org_form_tail')).short_abbr} «{watch('name') || 'Название'}»
+                    </span>
+                  </p>
                 </div>
 
                 <div>

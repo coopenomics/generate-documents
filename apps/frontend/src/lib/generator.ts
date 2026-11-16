@@ -8,6 +8,7 @@ import Docxtemplater from 'docxtemplater'
 import type { ConnectionPackageData, GarantLetterData, NewCooperativeData } from '../../../../packages/shared/src'
 import { GARANT_HINTS, highlightDocx } from './hints.mjs'
 import { chairPowersData, DEFAULT_CHAIR_POWERS } from './chair-powers.mjs'
+import { orgFormData } from './org-form.mjs'
 import { addressText, buildR11001Pdf, CHAIRMAN_INDEX, fillR11001 } from './r11001'
 
 // Префикс пути сайта: на GitHub Pages сайт живёт в подкаталоге репозитория.
@@ -129,7 +130,8 @@ function processNewCooperativeData(data: NewCooperativeData) {
     fp_month: MONTHS_GENITIVE[f.month - 1],
     fp_year: f.year.toString(),
     founding_date: `${pad2(f.day)}.${pad2(f.month)}.${f.year}`,
-    big_full_abbr: data.full_abbr?.toUpperCase() || 'ПОТРЕБИТЕЛЬСКИЙ КООПЕРАТИВ',
+    // Форма организации: «Потребительское Общество» и продолжение из формы
+    ...orgFormData(data.org_form_tail),
     full_abbr_eng: data.full_abbr_eng || 'Consumer Benefit Society',
     short_abbr_eng: data.short_abbr_eng || 'CBS',
     eng_name: data.eng_name || data.name,

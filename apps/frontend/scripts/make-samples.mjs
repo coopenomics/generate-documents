@@ -16,6 +16,7 @@ import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { addComments, GARANT_HINTS, highlightDocx, hint } from '../src/lib/hints.mjs'
 import { chairPowersData } from '../src/lib/chair-powers.mjs'
+import { orgFormData } from '../src/lib/org-form.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const TEMPLATES = path.join(root, 'public/templates/new-cooperative')
@@ -35,11 +36,8 @@ const MEMBER_HINTS = {
 }
 
 const data = {
-  // Форма организации — обычный текст
-  full_abbr: 'Потребительский Кооператив',
-  full_abbr_genitive: 'Потребительского Кооператива',
-  big_full_abbr: 'ПОТРЕБИТЕЛЬСКИЙ КООПЕРАТИВ',
-  short_abbr: 'ПК',
+  // Форма организации — обычный текст: «Потребительское Общество», «ПО»
+  ...orgFormData(),
   full_abbr_eng: 'Consumer Benefit Society',
   short_abbr_eng: 'CBS',
   // Поля для заполнения — подсказки

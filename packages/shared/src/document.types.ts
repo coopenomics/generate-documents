@@ -127,6 +127,10 @@ export interface NewCooperativeData extends BaseCooperativeInfo {
   // совета (буквы а–и без ж). По умолчанию — б).
   chair_powers?: string[];
 
+  // Продолжение наименования формы после «Потребительское Общество»,
+  // например «взаимного обеспечения». Пусто — только основа.
+  org_form_tail?: string;
+
   // Дата учредительного собрания
   founding_date: string; // Исходная дата
   
