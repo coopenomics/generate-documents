@@ -88,3 +88,43 @@ export function highlightDocx(zip) {
     zip.file(name, out)
   }
 }
+
+// Комментарии Word к абзацам документа (PizZip): для шаблонов, которые
+// заполняют вручную. Каждый комментарий привязан к первому абзацу, текст
+// которого содержит find. Текст документа не меняется.
+export function addComments(zip, items, author = 'Генератор документов') {
+  const escapeXml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  // Пробелы любого вида и числа сводятся к одному: в документах бывают
+  // двойные и неразрывные пробелы
+  const paraText = (p) => [...p.matchAll(/<w:t(?: [^>]*)?>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join('').replace(/[\s ]+/g, ' ')
+  let xml = zip.file('word/document.xml').asText()
+  const date = new Date().toISOString().replace(/\.\d+Z$/, 'Z')
+  const comments = []
+  items.forEach(({ find, text }, id) => {
+    let done = false
+    xml = xml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, (p) => {
+      if (done || !paraText(p).includes(find)) return p
+      done = true
+      const ppr = /<w:pPr>[\s\S]*?<\/w:pPr>/.exec(p)
+      const cut = ppr ? ppr.index + ppr[0].length : p.indexOf('>') + 1
+      return p.slice(0, cut) + `<w:commentRangeStart w:id="${id}"/>` + p.slice(cut, -'</w:p>'.length) +
+        `<w:commentRangeEnd w:id="${id}"/><w:r><w:commentReference w:id="${id}"/></w:r></w:p>`
+    })
+    if (!done) throw new Error(`Комментарий не к чему привязать: «${find}»`)
+    const body = text.split('\n').map((line) => `<w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`).join('')
+    comments.push(`<w:comment w:id="${id}" w:author="${escapeXml(author)}" w:initials="ГД" w:date="${date}">${body}</w:comment>`)
+  })
+  zip.file('word/document.xml', xml)
+  zip.file('word/comments.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' + comments.join('') + '</w:comments>')
+  const ct = zip.file('[Content_Types].xml').asText()
+  if (!ct.includes('/word/comments.xml')) {
+    zip.file('[Content_Types].xml', ct.replace('</Types>',
+      '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/></Types>'))
+  }
+  const rels = zip.file('word/_rels/document.xml.rels').asText()
+  if (!rels.includes('comments.xml')) {
+    zip.file('word/_rels/document.xml.rels', rels.replace('</Relationships>',
+      '<Relationship Id="rIdTemplateComments" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="comments.xml"/></Relationships>'))
+  }
+}
