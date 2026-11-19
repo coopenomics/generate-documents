@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { ArrowLeftIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { NewCooperativeData, Member, GarantLetterData, GarAddress } from '../../../../../packages/shared/src'
-import { generateNewCooperative, saveBlob, SHOW_TEST_BUTTON } from '../../lib/generator'
+import { generateNewCooperative, saveBlob } from '../../lib/generator'
 import { addressText, CHAIRMAN_INDEX, fillR11001 } from '../../lib/r11001'
 import { CHAIR_OPTIONS, chairPowersData, DEFAULT_CHAIR_POWERS, keepsZh } from '../../lib/chair-powers.mjs'
 import { orgFormData } from '../../lib/org-form.mjs'
@@ -206,10 +206,7 @@ export default function NewCooperativePage() {
     // Основная информация
     setValue('name', 'ТЕСТ')
     setValue('city', 'Москва')
-    setValue('website', 'https://test.coop')
     setValue('contact_email', 'info@test.coop')
-    setValue('confidential_email', 'privacy@test.coop')
-    setValue('confidential_link', 'https://test.coop/privacy')
     setValue('founding_date', '2024-01-15')
     
     // Финансовые параметры
@@ -233,6 +230,15 @@ export default function NewCooperativePage() {
       setValue(`member_${n}.phone` as any, '+79000000000')
     }
     setValue('member_2.gender' as any, '1')
+    setValue('garant', {
+      tax_authority: 'Межрайонную ИФНС России № 46 по г. Москве',
+      owner_full_name: 'Тестов Тест Тестович', owner_birthday: '1970-01-01',
+      owner_address: 'г. Москва, ул. Тестовая, д. 10, кв. 10', owner_inn: '000000000000',
+      owner_passport: '0000 000000', owner_passport_issued_by: 'ГУ МВД России по г. Москве',
+      owner_passport_issue_date: '2015-01-01', owner_passport_code: '000-000',
+      premises_part: 'комнату № 1', premises_area: '20',
+      egrn_record: '77:00:0000000:0000-77/000/2020-1', egrn_date: '2020-01-01', letter_date: '2024-01-10',
+    })
     setValue('protocol_1_open_time', '10:00')
     setValue('protocol_1_close_time', '11:00')
     
@@ -481,18 +487,16 @@ export default function NewCooperativePage() {
       </div>
 
       <div className="max-w-4xl mx-auto">
-        {/* Тестовая кнопка для загрузки данных */}
-        {SHOW_TEST_BUTTON && (
-          <div className="text-center mb-6">
-            <button
-              type="button"
-              onClick={fillTestData}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-            >
-              🧪 Загрузить тестовые данные
-            </button>
-          </div>
-        )}
+        {/* Тестовое заполнение: все поля, включая Р11001 и гарантийное письмо */}
+        <div className="mb-6 flex justify-end">
+          <button
+            type="button"
+            onClick={fillTestData}
+            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            Заполнить тестовыми данными
+          </button>
+        </div>
 
         {/* Форма */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -546,15 +550,6 @@ export default function NewCooperativePage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="form-label">Сайт</label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    {...register('website')}
-                    placeholder="https://test.coop"
-                  />
-                </div>
 
                 <div>
                   <label className="form-label">Дата учредительного собрания *</label>
@@ -578,25 +573,7 @@ export default function NewCooperativePage() {
                   />
                 </div>
 
-                <div>
-                  <label className="form-label">Email конфиденциальности</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    {...register('confidential_email')}
-                    placeholder="privacy@test.coop"
-                  />
-                </div>
 
-                <div>
-                  <label className="form-label">Ссылка на политику конфиденциальности</label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    {...register('confidential_link')}
-                    placeholder="https://test.coop/privacy"
-                  />
-                </div>
               </div>
             </div>
           </div>
