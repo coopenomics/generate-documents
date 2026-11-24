@@ -10,6 +10,16 @@ import { addressText, CHAIRMAN_INDEX, fillR11001 } from '../../lib/r11001'
 import { CHAIR_OPTIONS, chairPowersData, DEFAULT_CHAIR_POWERS, keepsZh } from '../../lib/chair-powers.mjs'
 import { orgFormData } from '../../lib/org-form.mjs'
 
+// Документы пакета на выбор
+type DocSelection = { ustav: boolean; protocol: boolean; garant: boolean; r11001: boolean }
+const ALL_DOCS: DocSelection = { ustav: true, protocol: true, garant: true, r11001: true }
+const DOC_LABELS: [keyof DocSelection, string][] = [
+  ['ustav', 'Устав'],
+  ['protocol', 'Протокол № 1 учредительного собрания'],
+  ['garant', 'Гарантийное письмо собственника помещения'],
+  ['r11001', 'Заявление по форме Р11001'],
+]
+
 // Коды ОКВЭД по умолчанию: основной 94.99 и набор потребительского кооператива
 const DEFAULT_OKVED =
   '94.99, 58.12.2, 58.19, 58.29, 62.01, 62.02, 62.03, 62.09, 63.11, 63.12, 63.99, 68.10, 68.20, 68.31, 68.32, 69.10, 69.20, 70.22, 72.20, 73.20, 74.90.9, 77.29, 77.39, 77.40, 81.10, 98.10, 98.20'
@@ -57,6 +67,20 @@ const GARANT_FIELDS: { key: keyof GarantLetterData; label: string; placeholder?:
 ]
 
 export default function NewCooperativePage() {
+  // Какие документы собрать: по умолчанию все. От выбора зависят разделы формы
+  const [docs, setDocs] = useState<DocSelection>({ ...ALL_DOCS })
+  const need = {
+    founding: docs.ustav || docs.protocol, // город и дата собрания
+    fees: docs.ustav || docs.protocol, // взносы
+    protocolData: docs.protocol, // дата и время собрания
+    address: docs.protocol || docs.garant || docs.r11001,
+    chair: docs.ustav, // полномочия председателя (п. 13.2 устава)
+    r11001: docs.r11001,
+    members: docs.protocol || docs.r11001,
+    garant: docs.garant,
+  }
+  const anyDoc = Object.values(docs).some(Boolean)
+
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationResult, setGenerationResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
@@ -182,7 +206,7 @@ export default function NewCooperativePage() {
 
     try {
       // Браузер заполняет шаблоны сам, данные формы на сервер не отправляются
-      const result = await generateNewCooperative(data)
+      const result = await generateNewCooperative(data, docs)
       setGenerationResult(result)
     } catch (err: any) {
       console.error('Ошибка генерации:', err)
@@ -500,6 +524,28 @@ export default function NewCooperativePage() {
 
         {/* Форма */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Выбор документов: снятая галочка убирает из формы лишние разделы */}
+          <div className="card">
+            <div className="card-body">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Документы</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Отметьте документы для генерации. Форма покажет поля только для выбранных документов.
+              </p>
+              <div className="grid gap-2 md:grid-cols-2">
+                {DOC_LABELS.map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={docs[key]}
+                      onChange={(e) => setDocs({ ...docs, [key]: e.target.checked })}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Основная информация */}
           <div className="card">
             <div className="card-body">
@@ -537,6 +583,7 @@ export default function NewCooperativePage() {
                   </p>
                 </div>
 
+                {need.founding && (<>
                 <div>
                   <label className="form-label">Город *</label>
                   <input
@@ -562,7 +609,9 @@ export default function NewCooperativePage() {
                     <p className="form-error">{errors.founding_date.message}</p>
                   )}
                 </div>
+                </>)}
 
+                {need.r11001 && (
                 <div>
                   <label className="form-label">Email для связи</label>
                   <input
@@ -572,6 +621,7 @@ export default function NewCooperativePage() {
                     placeholder="info@test.coop"
                   />
                 </div>
+                )}
 
 
               </div>
@@ -579,6 +629,7 @@ export default function NewCooperativePage() {
           </div>
 
           {/* Финансовые параметры */}
+          {need.fees && (<>
           <div className="card">
             <div className="card-body">
               <h3 className="text-lg font-medium text-gray-900 mb-1">
@@ -681,8 +732,10 @@ export default function NewCooperativePage() {
               </div>
             </div>
           </div>
+          </>)}
 
           {/* Данные протокола */}
+          {need.protocolData && (<>
           <div className="card">
             <div className="card-body">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -719,8 +772,10 @@ export default function NewCooperativePage() {
               </div>
             </div>
           </div>
+          </>)}
 
           {/* Адрес кооператива по ГАР — один на все документы */}
+          {need.address && (<>
           <div className="card">
             <div className="card-body">
               <h3 className="text-lg font-medium text-gray-900 mb-1">Адрес кооператива</h3>
@@ -761,8 +816,10 @@ export default function NewCooperativePage() {
               </p>
             </div>
           </div>
+          </>)}
 
           {/* Полномочия председателя без кворума — п. 13.2 и 13.4 устава */}
+          {need.chair && (<>
           <div className="card">
             <div className="card-body">
               <h3 className="text-lg font-medium text-gray-900 mb-1">Полномочия председателя совета</h3>
@@ -793,8 +850,10 @@ export default function NewCooperativePage() {
               </p>
             </div>
           </div>
+          </>)}
 
           {/* Данные только для заявления Р11001 */}
+          {need.r11001 && (<>
           <div className="card">
             <div className="card-body">
               <h3 className="text-lg font-medium text-gray-900 mb-1">Для заявления Р11001</h3>
@@ -809,8 +868,10 @@ export default function NewCooperativePage() {
               </label>
             </div>
           </div>
+          </>)}
 
           {/* Учредители */}
+          {need.members && (<>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">
@@ -829,8 +890,10 @@ export default function NewCooperativePage() {
               renderMemberForm(index)
             )}
           </div>
+          </>)}
 
           {/* Гарантийное письмо собственника помещения — необязательно */}
+          {need.garant && (<>
           <div className="card">
             <div className="card-body">
               <h3 className="text-lg font-medium text-gray-900 mb-1">
@@ -856,8 +919,10 @@ export default function NewCooperativePage() {
               </div>
             </div>
           </div>
+          </>)}
 
           {/* Хватает ли данных для заявления Р11001 */}
+          {need.r11001 && (<>
           <div className={`card ${r11001Missing.length ? 'border-yellow-300 bg-yellow-50' : 'border-success-200 bg-success-50'}`}>
             <div className="card-body">
               {r11001Missing.length === 0 ? (
@@ -875,6 +940,7 @@ export default function NewCooperativePage() {
               )}
             </div>
           </div>
+          </>)}
 
           {/* Кнопка отправки / плашка с результатом */}
           <div>
@@ -891,9 +957,11 @@ export default function NewCooperativePage() {
                     Сгенерировано {generationResult.files?.length || 0} документов
                   </p>
                   <p className="text-success-700 mb-4 text-sm">
-                    {generationResult.r11001Missing?.length
-                      ? 'Форма Р11001 — пустой бланк и список недостающих данных.'
-                      : 'Форма Р11001 заполнена.'}
+                    {!generationResult.r11001
+                      ? ''
+                      : generationResult.r11001Missing?.length
+                        ? 'Форма Р11001 — пустой бланк и список недостающих данных.'
+                        : 'Форма Р11001 заполнена.'}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button
@@ -918,7 +986,7 @@ export default function NewCooperativePage() {
               <div className="text-center">
                 <button
                   type="submit"
-                  disabled={isGenerating}
+                  disabled={isGenerating || !anyDoc}
                   className="btn-success px-8 py-3 text-lg"
                 >
                   {isGenerating ? 'Генерация...' : 'Сгенерировать документы'}

@@ -118,7 +118,8 @@ function garantData(g: GarantLetterData = {}) {
 }
 
 function processNewCooperativeData(data: NewCooperativeData) {
-  const f = parseIsoDate(data.founding_date)
+  // Дату собрания используют устав и протокол; без них поле может быть пустым
+  const f = data.founding_date ? parseIsoDate(data.founding_date) : null
   const protocol1 = data.protocol_1_date ? parseIsoDate(data.protocol_1_date) : null
 
   const result: Record<string, any> = {
@@ -126,10 +127,10 @@ function processNewCooperativeData(data: NewCooperativeData) {
     ...garantData(data.garant),
     // Полномочия председателя без кворума: текст п. 13.2, подпункт ж) и буквы 13.4
     ...chairPowersData(data.chair_powers ?? DEFAULT_CHAIR_POWERS),
-    fp_day: f.day.toString(),
-    fp_month: MONTHS_GENITIVE[f.month - 1],
-    fp_year: f.year.toString(),
-    founding_date: `${pad2(f.day)}.${pad2(f.month)}.${f.year}`,
+    fp_day: f ? f.day.toString() : '',
+    fp_month: f ? MONTHS_GENITIVE[f.month - 1] : '',
+    fp_year: f ? f.year.toString() : '',
+    founding_date: f ? `${pad2(f.day)}.${pad2(f.month)}.${f.year}` : '',
     // Форма организации: «Потребительское Общество» и продолжение из формы
     ...orgFormData(data.org_form_tail),
     full_abbr_eng: data.full_abbr_eng || 'Consumer Benefit Society',
@@ -167,10 +168,10 @@ function processNewCooperativeData(data: NewCooperativeData) {
 }
 
 // Заполняет все шаблоны набора и возвращает zip-архив с готовыми .docx.
-async function renderSet(set: TemplateSet, data: Record<string, any>) {
+async function renderSet(set: TemplateSet, data: Record<string, any>, only?: string[]) {
   const archive = new PizZip()
   const files: string[] = []
-  for (const name of TEMPLATE_SETS[set]) {
+  for (const name of TEMPLATE_SETS[set].filter((n) => !only || only.includes(n))) {
     const res = await fetch(`${BASE_PATH}/templates/${set}/${name}`)
     if (!res.ok) throw new Error(`Шаблон ${name} не загрузился (HTTP ${res.status})`)
     const doc = new Docxtemplater(new PizZip(await res.arrayBuffer()), {
@@ -207,8 +208,18 @@ function saveBlob(blob: Blob, fileName: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 
-export async function generateNewCooperative(data: NewCooperativeData) {
-  const { archive, files } = await renderSet('new-cooperative', processNewCooperativeData(data))
+// Документы пакета нового кооператива на выбор пользователя
+export type NewCooperativeDocs = { ustav: boolean; protocol: boolean; garant: boolean; r11001: boolean }
+const ALL_NEW_COOP_DOCS: NewCooperativeDocs = { ustav: true, protocol: true, garant: true, r11001: true }
+
+export async function generateNewCooperative(data: NewCooperativeData, docs: NewCooperativeDocs = ALL_NEW_COOP_DOCS) {
+  const only = [docs.ustav && 'ustav.docx', docs.protocol && 'protocol_1.docx', docs.garant && 'garant_letter.docx'].filter(Boolean) as string[]
+  const { archive, files } = await renderSet('new-cooperative', processNewCooperativeData(data), only)
+  if (!docs.r11001) {
+    const blob = zipBlob(archive)
+    saveBlob(blob, 'documents.zip')
+    return { blob, files, r11001: false, r11001Missing: [] as string[] }
+  }
 
   // Форма Р11001: заполняется, только если данных хватает. Иначе — пустой
   // бланк и список того, что не заполнено: в бланке ФНС посторонних знаков
@@ -227,7 +238,7 @@ export async function generateNewCooperative(data: NewCooperativeData) {
 
   const blob = zipBlob(archive)
   saveBlob(blob, 'documents.zip')
-  return { blob, files, r11001Missing: r11001.missing }
+  return { blob, files, r11001: true, r11001Missing: r11001.missing }
 }
 
 export async function generateConnectionPackage(data: ConnectionPackageData) {
